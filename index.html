@@ -55,10 +55,14 @@
                     return { ...state, items: [...state.items, { ...action.payload, cantidad: 1 }] };
                 }
                 case 'REMOVER_ITEM':
+                    // Eliminar completamente el item por su ID
                     return { ...state, items: state.items.filter(item => item.id !== action.payload) };
                 case 'FINALIZAR_PEDIDO':
                     // Simulación del backend: el pedido se envía y el estado se resetea
                     return { items: [], id: state.id + 1, mensaje: 'Pedido #' + state.id + ' enviado a cocina con éxito.' };
+                case 'CANCELAR_PEDIDO':
+                    // Resetea el pedido actual
+                    return { items: [], id: state.id + 1, mensaje: 'Pedido Cancelado.' };
                 default:
                     return state;
             }
@@ -83,8 +87,15 @@
                 setTimeout(() => setMensaje(null), 3000); // Borra el mensaje después de 3 segundos
             };
 
+            // Función de Cancelación
+            const cancelarPedido = () => {
+                dispatch({ type: 'CANCELAR_PEDIDO' });
+                setMensaje(`Pedido #${pedido.id} cancelado.`);
+                setTimeout(() => setMensaje(null), 3000); // Borra el mensaje después de 3 segundos
+            }
+
             // Valor que se provee a los consumidores
-            const contextValue = { pedido, agregarItem, enviarACocina, mensaje };
+            const contextValue = { pedido, agregarItem, enviarACocina, cancelarPedido, mensaje };
 
             return (
                 <PedidoContext.Provider value={contextValue}>
@@ -116,7 +127,7 @@
         // Componente del Resumen del Pedido (Carrito)
         const ResumenPedido = () => {
             // useContext: Consume el contexto para acceder al estado del pedido y acciones
-            const { pedido, enviarACocina } = React.useContext(PedidoContext);
+            const { pedido, enviarACocina, cancelarPedido } = React.useContext(PedidoContext);
 
             // Cálculo de totales (Lógica de negocio simulada)
             const subtotal = pedido.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
@@ -168,9 +179,15 @@
                         >
                             ENVIAR A COCINA (Backend Simulado)
                         </button>
-                        {/* El botón de Pagar Pedido se implementaría en una vista separada */}
+                        {/* Botón de Cancelar Pedido (Resetea el carrito) */}
                         <button 
-                            className="w-full py-3 rounded-lg font-bold bg-red-600 hover:bg-red-700 transition duration-200 shadow-lg"
+                            onClick={cancelarPedido}
+                            disabled={pedido.items.length === 0}
+                            className={`w-full py-3 rounded-lg font-bold transition duration-200 ${
+                                pedido.items.length > 0
+                                ? 'bg-red-600 hover:bg-red-700 shadow-lg'
+                                : 'bg-gray-500 cursor-not-allowed'
+                            }`}
                         >
                             CANCELAR PEDIDO
                         </button>
@@ -178,6 +195,28 @@
                 </div>
             );
         };
+
+        // Componente de la Mesa (para la vista de Gestión de Mesas)
+        const MesaCard = ({ id, estado, personas, color }) => (
+            <div className={`p-4 rounded-lg shadow-lg cursor-pointer transition transform hover:scale-[1.02] ${color}`}>
+                <h3 className="text-xl font-bold">Mesa #{id}</h3>
+                <p className="text-sm mt-1">Estado: {estado}</p>
+                <p className="text-sm">Personas: {personas}</p>
+                <button className="mt-3 bg-white text-gray-800 px-3 py-1 rounded-full text-xs font-semibold hover:bg-gray-200">
+                    {estado === 'Libre' ? 'Abrir Pedido' : 'Ver Pedido'}
+                </button>
+            </div>
+        );
+
+        // Datos simulados para la vista de mesas
+        const MESAS_DATA = [
+            { id: 1, estado: 'Ocupada', personas: 4, color: 'bg-red-400 text-white' },
+            { id: 2, estado: 'Libre', personas: 2, color: 'bg-green-400 text-white' },
+            { id: 3, estado: 'Pago Pendiente', personas: 3, color: 'bg-yellow-400 text-gray-800' },
+            { id: 4, estado: 'Libre', personas: 6, color: 'bg-green-400 text-white' },
+            { id: 5, estado: 'Ocupada', personas: 1, color: 'bg-red-400 text-white' },
+        ];
+
 
         // ----------------------------------------------------
         // 3. COMPONENTE PRINCIPAL (Main Layout)
@@ -211,9 +250,56 @@
                             </>
                         );
                     case 'mesas':
-                        return <h1 className="text-3xl font-bold text-gray-800 mb-4">GESTIÓN DE MESAS (WIP)</h1>;
+                        // Interfaz de Gestión de Mesas implementada
+                        return (
+                            <>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-6">GESTIÓN DE MESAS</h1>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                    {MESAS_DATA.map(mesa => (
+                                        <MesaCard key={mesa.id} {...mesa} />
+                                    ))}
+                                </div>
+                            </>
+                        );
                     case 'historial':
-                        return <h1 className="text-3xl font-bold text-gray-800 mb-4">HISTORIAL DE PEDIDOS (WIP)</h1>;
+                        // Interfaz de Historial de Pedidos implementada
+                        return (
+                            <>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-6">HISTORIAL DE PEDIDOS</h1>
+                                <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"># Pedido</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa/Cliente</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {[
+                                                { id: 100, cliente: 'Mesa 5', fecha: '2025-11-20', total: 45.50, estado: 'Pagado' },
+                                                { id: 99, cliente: 'Para llevar (J. Pérez)', fecha: '2025-11-19', total: 22.00, estado: 'Pagado' },
+                                                { id: 98, cliente: 'Mesa 1', fecha: '2025-11-19', total: 68.90, estado: 'Cancelado' },
+                                            ].map(ped => (
+                                                <tr key={ped.id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ped.id}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ped.cliente}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ped.fecha}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">${ped.total.toFixed(2)}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ped.estado === 'Pagado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                            {ped.estado}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        );
                     default:
                         return null;
                 }
