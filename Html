@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Pedidos - MVP</title>
+    <!-- Incluye Tailwind CSS para un diseño rápido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración para usar la fuente Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="root"></div>
+
+    <!-- Incluye React, ReactDOM y Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        // ----------------------------------------------------
+        // SIMULACIÓN DE BACKEND: Menú de Platos (constante JSON)
+        // ----------------------------------------------------
+        const MENU_PLATOS = [
+            { id: 1, nombre: "Pizza Clásica", precio: 15.00, categoria: "Pizzas", img: "https://placehold.co/40x40/f87171/ffffff?text=PZ" },
+            { id: 2, nombre: "Hamburguesa Doble", precio: 12.50, categoria: "Hamburguesas", img: "https://placehold.co/40x40/fbbf24/ffffff?text=HB" },
+            { id: 3, nombre: "Ensalada César", precio: 9.00, categoria: "Ensaladas", img: "https://placehold.co/40x40/4ade80/ffffff?text=EN" },
+            { id: 4, nombre: "Refresco Cola", precio: 3.00, categoria: "Bebidas", img: "https://placehold.co/40x40/3b82f6/ffffff?text=RF" },
+            { id: 5, nombre: "Sopa del Día", precio: 7.50, categoria: "Entrantes", img: "https://placehold.co/40x40/6366f1/ffffff?text=SO" },
+            { id: 6, nombre: "Tarta de Queso", precio: 6.00, categoria: "Postres", img: "https://placehold.co/40x40/f472b6/ffffff?text=TQ" },
+        ];
+
+        // ----------------------------------------------------
+        // 1. CONTEXT API: Para gestión global del pedido
+        // ----------------------------------------------------
+        const PedidoContext = React.createContext();
+
+        // useReducer: Para manejar la lógica compleja del pedido (añadir, eliminar, etc.)
+        const pedidoReducer = (state, action) => {
+            switch (action.type) {
+                case 'AGREGAR_ITEM': {
+                    const existingItem = state.items.find(item => item.id === action.payload.id);
+                    if (existingItem) {
+                        return {
+                            ...state,
+                            items: state.items.map(item =>
+                                item.id === action.payload.id ? { ...item, cantidad: item.cantidad + 1 } : item
+                            ),
+                        };
+                    }
+                    return { ...state, items: [...state.items, { ...action.payload, cantidad: 1 }] };
+                }
+                case 'REMOVER_ITEM':
+                    return { ...state, items: state.items.filter(item => item.id !== action.payload) };
+                case 'FINALIZAR_PEDIDO':
+                    // Simulación del backend: el pedido se envía y el estado se resetea
+                    return { items: [], id: state.id + 1, mensaje: 'Pedido #' + state.id + ' enviado a cocina con éxito.' };
+                default:
+                    return state;
+            }
+        };
+
+        // Componente Proveedor del Contexto
+        const PedidoProvider = ({ children }) => {
+            // useState: Estado simple para el mensaje de éxito
+            const [mensaje, setMensaje] = React.useState(null); 
+            // useReducer: Estado complejo para la lista de ítems del pedido
+            const [pedido, dispatch] = React.useReducer(pedidoReducer, { items: [], id: 101, mensaje: '' });
+
+            // Función para agregar ítems al pedido
+            const agregarItem = (item) => {
+                dispatch({ type: 'AGREGAR_ITEM', payload: item });
+            };
+            
+            // Simulación de envío al "Backend"
+            const enviarACocina = () => {
+                dispatch({ type: 'FINALIZAR_PEDIDO' });
+                setMensaje(`¡Pedido #${pedido.id} enviado a cocina! Nuevo pedido listo.`);
+                setTimeout(() => setMensaje(null), 3000); // Borra el mensaje después de 3 segundos
+            };
+
+            // Valor que se provee a los consumidores
+            const contextValue = { pedido, agregarItem, enviarACocina, mensaje };
+
+            return (
+                <PedidoContext.Provider value={contextValue}>
+                    {children}
+                </PedidoContext.Provider>
+            );
+        };
+
+        // ----------------------------------------------------
+        // 2. COMPONENTES: Modularizando la Interfaz
+        // ----------------------------------------------------
+
+        // Componente de la Tarjeta de Producto
+        const ProductoCard = ({ producto }) => {
+            // useContext: Consume el contexto para acceder a la función agregarItem
+            const { agregarItem } = React.useContext(PedidoContext);
+            return (
+                <div 
+                    className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer flex flex-col justify-between"
+                    onClick={() => agregarItem(producto)} // Acción principal
+                >
+                    <img src={producto.img} alt={producto.nombre} className="w-12 h-12 mx-auto mb-2 rounded-full border-2 border-gray-200"/>
+                    <h3 className="text-sm font-semibold text-center truncate">{producto.nombre}</h3>
+                    <p className="text-xs text-center text-gray-600 font-bold mt-1">${producto.precio.toFixed(2)}</p>
+                </div>
+            );
+        };
+
+        // Componente del Resumen del Pedido (Carrito)
+        const ResumenPedido = () => {
+            // useContext: Consume el contexto para acceder al estado del pedido y acciones
+            const { pedido, enviarACocina } = React.useContext(PedidoContext);
+
+            // Cálculo de totales (Lógica de negocio simulada)
+            const subtotal = pedido.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+            const impuestos = subtotal * 0.10; // 10% de impuesto simulado
+            const total = subtotal + impuestos;
+
+            return (
+                <div className="bg-gray-800 p-6 rounded-lg shadow-xl h-full flex flex-col text-white">
+                    <h2 className="text-2xl font-bold mb-4 border-b border-gray-600 pb-2">RESUMEN PEDIDO #{pedido.id}</h2>
+
+                    <div className="flex-grow overflow-y-auto space-y-3">
+                        {pedido.items.length === 0 ? (
+                            <p className="text-gray-400 italic">Aún no hay platos en el pedido.</p>
+                        ) : (
+                            pedido.items.map(item => (
+                                <div key={item.id} className="flex justify-between items-center text-sm bg-gray-700 p-2 rounded">
+                                    <span className="font-semibold">{item.cantidad}x {item.nombre}</span>
+                                    <span>${(item.precio * item.cantidad).toFixed(2)}</span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-gray-600 space-y-1">
+                        <div className="flex justify-between text-base">
+                            <span>Subtotal:</span>
+                            <span>${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-base">
+                            <span>Impuestos (10%):</span>
+                            <span>${impuestos.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-2xl font-extrabold text-yellow-400">
+                            <span>TOTAL:</span>
+                            <span>${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 space-y-2">
+                        {/* Botón de acción principal: Simula la interacción con el Backend */}
+                        <button 
+                            onClick={enviarACocina}
+                            disabled={pedido.items.length === 0}
+                            className={`w-full py-3 rounded-lg font-bold transition duration-200 ${
+                                pedido.items.length > 0
+                                ? 'bg-green-600 hover:bg-green-700 shadow-lg'
+                                : 'bg-gray-500 cursor-not-allowed'
+                            }`}
+                        >
+                            ENVIAR A COCINA (Backend Simulado)
+                        </button>
+                        {/* El botón de Pagar Pedido se implementaría en una vista separada */}
+                        <button 
+                            className="w-full py-3 rounded-lg font-bold bg-red-600 hover:bg-red-700 transition duration-200 shadow-lg"
+                        >
+                            CANCELAR PEDIDO
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // ----------------------------------------------------
+        // 3. COMPONENTE PRINCIPAL (Main Layout)
+        // ----------------------------------------------------
+        const App = () => {
+            // useState: Simula la navegación entre vistas (para demostrar Rutas y Navegación)
+            const [vistaActual, setVistaActual] = React.useState('pedido');
+            const { mensaje } = React.useContext(PedidoContext);
+
+            // useEffect: Simula la obtención inicial de datos (aunque la fuente es local)
+            React.useEffect(() => {
+                console.log("Aplicación Iniciada. useEffect ejecutado para cargar datos iniciales del menú.");
+                // Aquí iría la llamada fetch/Axios a la API real
+            }, []);
+
+            const renderContent = () => {
+                switch (vistaActual) {
+                    case 'pedido':
+                        return (
+                            <>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-4">TOMA DE PEDIDO</h1>
+                                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+                                    <input type="text" placeholder="Mesa [01]" className="p-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full sm:w-1/3"/>
+                                    <button className="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition font-semibold w-full sm:w-auto">Para Llevar</button>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto flex-grow pb-4">
+                                    {MENU_PLATOS.map(producto => (
+                                        <ProductoCard key={producto.id} producto={producto} />
+                                    ))}
+                                </div>
+                            </>
+                        );
+                    case 'mesas':
+                        return <h1 className="text-3xl font-bold text-gray-800 mb-4">GESTIÓN DE MESAS (WIP)</h1>;
+                    case 'historial':
+                        return <h1 className="text-3xl font-bold text-gray-800 mb-4">HISTORIAL DE PEDIDOS (WIP)</h1>;
+                    default:
+                        return null;
+                }
+            };
+
+            return (
+                <div className="flex h-screen bg-gray-900">
+                    {/* Barra Lateral de Navegación (Router Simulado) */}
+                    <nav className="w-20 sm:w-64 bg-gray-800 text-white flex flex-col p-4 shadow-2xl">
+                        <div className="text-xl font-bold mb-8 text-yellow-400 hidden sm:block">RESTAURANTE POS</div>
+                        <ul className="space-y-4 flex flex-col items-center sm:items-stretch">
+                            {/* Simulación de Rutas y Navegación con useState */}
+                            {['pedido', 'mesas', 'historial'].map(item => (
+                                <li key={item}>
+                                    <button 
+                                        onClick={() => setVistaActual(item)}
+                                        className={`w-full p-3 rounded-lg text-center capitalize transition duration-150 ${
+                                            vistaActual === item 
+                                            ? 'bg-blue-600 font-bold' 
+                                            : 'hover:bg-gray-700'
+                                        }`}
+                                    >
+                                        <span className='hidden sm:inline'>{item.toUpperCase()}</span>
+                                        <span className='sm:hidden'>{item.slice(0, 1).toUpperCase()}</span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+
+                    {/* Contenido Principal y Resumen del Pedido */}
+                    <main className="flex flex-1 overflow-hidden">
+                        {/* Sección de Contenido Dinámico */}
+                        <section className="flex flex-col flex-grow p-6 sm:p-8 bg-gray-100 overflow-y-auto">
+                            {renderContent()}
+                        </section>
+
+                        {/* Columna Fija de Resumen del Pedido (Carrito) */}
+                        <aside className="w-full sm:w-96 flex-shrink-0 bg-gray-800 shadow-xl">
+                            <ResumenPedido />
+                        </aside>
+                    </main>
+
+                    {/* Mensaje de Éxito (Notificación) */}
+                    {mensaje && (
+                        <div className="absolute top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-xl font-bold transition-opacity duration-300">
+                            {mensaje}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Renderizado del componente principal
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        // El componente App debe estar envuelto en el Provider para acceder al Context
+        root.render(<PedidoProvider><App /></PedidoProvider>);
+    </script>
+</body>
+</html>
