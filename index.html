@@ -34,9 +34,10 @@
 
         // 1. CONTEXT API: Para gestión global del pedido
         
-        const PedidoContext = React.createContext();
+        // Contexto del Pedido
+        const PedidoContexto = React.createContext();
 
-        // useReducer: Para manejar la lógica compleja del pedido (añadir, eliminar, etc.)
+        // Reductor para manejar la lógica compleja del pedido (añadir, eliminar, etc.)
         const pedidoReducer = (state, action) => {
             switch (action.type) {
                 case 'AGREGAR_ITEM': {
@@ -65,9 +66,11 @@
             }
         };
 
-        // Componente Proveedor del Contexto
-        const PedidoProvider = ({ children }) => {
+        // Componente Proveedor del Contexto (Anteriormente PedidoProvider)
+        const ProveedorPedido = ({ children }) => {
+            // Estado para manejar mensajes de notificación
             const [mensaje, setMensaje] = React.useState(null); 
+            // useReducer: Para manejar el estado principal del pedido
             const [pedido, dispatch] = React.useReducer(pedidoReducer, { items: [], id: 101, mensaje: '' });
 
             // Función para agregar ítems al pedido
@@ -77,34 +80,36 @@
             
             // Simulación de envío al "Backend"
             const enviarACocina = () => {
-                dispatch({ type: 'FINALIZAR_PEDIDO' });
+                // Se despacha la acción de finalizar, que actualiza el estado y el ID.
+                dispatch({ type: 'FINALIZAR_PEDIDO' }); 
                 setMensaje(`¡Pedido #${pedido.id} enviado a cocina! Nuevo pedido listo.`);
-                setTimeout(() => setMensaje(null), 3000);
+                setTimeout(() => setMensaje(null), 3000); // Ocultar mensaje después de 3s
             };
 
             // Función de Cancelación
             const cancelarPedido = () => {
+                // Se despacha la acción de cancelar
                 dispatch({ type: 'CANCELAR_PEDIDO' });
                 setMensaje(`Pedido #${pedido.id} cancelado.`);
-                setTimeout(() => setMensaje(null), 3000);
+                setTimeout(() => setMensaje(null), 3000); // Ocultar mensaje después de 3s
             }
 
-            // Valor
-            const contextValue = { pedido, agregarItem, enviarACocina, cancelarPedido, mensaje };
+            // Valor que se proveerá al Contexto
+            const valorContexto = { pedido, agregarItem, enviarACocina, cancelarPedido, mensaje };
 
             return (
-                <PedidoContext.Provider value={contextValue}>
+                <PedidoContexto.Provider value={valorContexto}>
                     {children}
-                </PedidoContext.Provider>
+                </PedidoContexto.Provider>
             );
         };
 
         // 2. COMPONENTES: Modularizando la Interfaz
 
         // Componente de la Tarjeta de Producto
-        const ProductoCard = ({ producto }) => {
+        const TarjetaProducto = ({ producto }) => {
             // useContext: Contexto para acceder a la función agregarItem
-            const { agregarItem } = React.useContext(PedidoContext);
+            const { agregarItem } = React.useContext(PedidoContexto);
             return (
                 <div 
                     className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer flex flex-col justify-between"
@@ -112,7 +117,7 @@
                 >
                     <img src={producto.img} alt={producto.nombre} className="w-12 h-12 mx-auto mb-2 rounded-full border-2 border-gray-200"/>
                     <h3 className="text-sm font-semibold text-center truncate">{producto.nombre}</h3>
-                    <p className="text-xs text-center text-gray-600 font-bold mt-1">${producto.precio.toFixed(2)}</p>
+                    <p className="text-xs text-center text-gray-600 font-bold mt-1">${producto.precio.toLocaleString('es-CO')}</p>
                 </div>
             );
         };
@@ -120,12 +125,17 @@
         // Componente del Resumen del Pedido (Carrito)
         const ResumenPedido = () => {
             // useContext: Contexto para acceder al estado del pedido y acciones
-            const { pedido, enviarACocina, cancelarPedido } = React.useContext(PedidoContext);
+            const { pedido, enviarACocina, cancelarPedido } = React.useContext(PedidoContexto);
 
             // Cálculo de totales
             const subtotal = pedido.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
             const impuestos = subtotal * 0.10; // 10% de impuesto simulado
             const total = subtotal + impuestos;
+
+            // Función de formato de moneda para Colombia
+            const formatoCOP = (monto) => {
+                return monto.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            }
 
             return (
                 <div className="bg-gray-800 p-6 rounded-lg shadow-xl h-full flex flex-col text-white">
@@ -138,7 +148,7 @@
                             pedido.items.map(item => (
                                 <div key={item.id} className="flex justify-between items-center text-sm bg-gray-700 p-2 rounded">
                                     <span className="font-semibold">{item.cantidad}x {item.nombre}</span>
-                                    <span>${(item.precio * item.cantidad).toFixed(2)}</span>
+                                    <span>${formatoCOP(item.precio * item.cantidad)}</span>
                                 </div>
                             ))
                         )}
@@ -147,15 +157,15 @@
                     <div className="mt-6 pt-4 border-t border-gray-600 space-y-1">
                         <div className="flex justify-between text-base">
                             <span>Subtotal:</span>
-                            <span>${subtotal.toFixed(2)}</span>
+                            <span>${formatoCOP(subtotal)}</span>
                         </div>
                         <div className="flex justify-between text-base">
                             <span>Impuestos (10%):</span>
-                            <span>${impuestos.toFixed(2)}</span>
+                            <span>${formatoCOP(impuestos)}</span>
                         </div>
                         <div className="flex justify-between text-2xl font-extrabold text-yellow-400">
                             <span>TOTAL:</span>
-                            <span>${total.toFixed(2)}</span>
+                            <span>${formatoCOP(total)}</span>
                         </div>
                     </div>
 
@@ -190,7 +200,7 @@
         };
 
         // Componente de la Mesa (para la vista de Gestión de Mesas)
-        const MesaCard = ({ id, estado, personas, color }) => (
+        const TarjetaMesa = ({ id, estado, personas, color }) => (
             <div className={`p-4 rounded-lg shadow-lg cursor-pointer transition transform hover:scale-[1.02] ${color}`}>
                 <h3 className="text-xl font-bold">Mesa #{id}</h3>
                 <p className="text-sm mt-1">Estado: {estado}</p>
@@ -202,12 +212,19 @@
         );
 
         // Datos simulados para la vista de mesas
-        const MESAS_DATA = [
+        const DATOS_MESAS = [
             { id: 1, estado: 'Ocupada', personas: 4, color: 'bg-red-400 text-white' },
             { id: 2, estado: 'Libre', personas: 2, color: 'bg-green-400 text-white' },
             { id: 3, estado: 'Pago Pendiente', personas: 3, color: 'bg-yellow-400 text-gray-800' },
             { id: 4, estado: 'Libre', personas: 6, color: 'bg-green-400 text-white' },
             { id: 5, estado: 'Ocupada', personas: 1, color: 'bg-red-400 text-white' },
+        ];
+        
+        // Datos simulados para la vista de historial
+        const DATOS_HISTORIAL = [
+            { id: 100, cliente: 'Mesa 5', fecha: '2025-11-20', total: 45000, estado: 'Pagado' },
+            { id: 99, cliente: 'Para llevar (J. Pérez)', fecha: '2025-11-19', total: 22000, estado: 'Pagado' },
+            { id: 98, cliente: 'Mesa 1', fecha: '2025-11-19', total: 60000, estado: 'Cancelado' },
         ];
 
 
@@ -216,7 +233,7 @@
         const App = () => {
             // useState: Simula la navegación entre vistas
             const [vistaActual, setVistaActual] = React.useState('pedido');
-            const { mensaje } = React.useContext(PedidoContext);
+            const { mensaje } = React.useContext(PedidoContexto);
 
             // useEffect: Simula la obtención inicial de datos
             React.useEffect(() => {
@@ -224,7 +241,7 @@
                 // Aquí iría la llamada a la API real
             }, []);
 
-            const renderContent = () => {
+            const renderizarContenido = () => {
                 switch (vistaActual) {
                     case 'pedido':
                         return (
@@ -236,7 +253,7 @@
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto flex-grow pb-4">
                                     {MENU_PLATOS.map(producto => (
-                                        <ProductoCard key={producto.id} producto={producto} />
+                                        <TarjetaProducto key={producto.id} producto={producto} />
                                     ))}
                                 </div>
                             </>
@@ -247,8 +264,8 @@
                             <>
                                 <h1 className="text-3xl font-bold text-gray-800 mb-6">GESTIÓN DE MESAS</h1>
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                    {MESAS_DATA.map(mesa => (
-                                        <MesaCard key={mesa.id} {...mesa} />
+                                    {DATOS_MESAS.map(mesa => (
+                                        <TarjetaMesa key={mesa.id} {...mesa} />
                                     ))}
                                 </div>
                             </>
@@ -270,16 +287,12 @@
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
-                                            {[
-                                                { id: 100, cliente: 'Mesa 5', fecha: '2025-11-20', total: 45000, estado: 'Pagado' },
-                                                { id: 99, cliente: 'Para llevar (J. Pérez)', fecha: '2025-11-19', total: 22000, estado: 'Pagado' },
-                                                { id: 98, cliente: 'Mesa 1', fecha: '2025-11-19', total: 60000, estado: 'Cancelado' },
-                                            ].map(ped => (
+                                            {DATOS_HISTORIAL.map(ped => (
                                                 <tr key={ped.id} className="hover:bg-gray-50">
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ped.id}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ped.cliente}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ped.fecha}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">${ped.total.toFixed(2)}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">${ped.total.toLocaleString('es-CO')}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${ped.estado === 'Pagado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                                             {ped.estado}
@@ -326,7 +339,7 @@
                     <main className="flex flex-1 overflow-hidden">
                         {/* Sección de Contenido Dinámico */}
                         <section className="flex flex-col flex-grow p-6 sm:p-8 bg-gray-100 overflow-y-auto">
-                            {renderContent()}
+                            {renderizarContenido()}
                         </section>
 
                         {/* Columna Fija de Resumen del Pedido (Carrito) */}
@@ -348,8 +361,8 @@
         // Renderizado del componente principal
         const container = document.getElementById('root');
         const root = ReactDOM.createRoot(container);
-        // El componente App debe estar envuelto en el Provider para acceder al Context
-        root.render(<PedidoProvider><App /></PedidoProvider>);
+        // El componente App debe estar envuelto en el Provider para acceder al Contexto
+        root.render(<ProveedorPedido><App /></ProveedorPedido>);
     </script>
 </body>
 </html>
