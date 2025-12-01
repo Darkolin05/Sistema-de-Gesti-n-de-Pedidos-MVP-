@@ -21,7 +21,7 @@
 
     <script type="text/babel">
 
-        // SIMULACIÓN DE BACKEND: Menú de Platos (constante JSON)
+        // Línea 18: SIMULACIÓN DE BACKEND: Menú de Platos 
         
         const MENU_PLATOS = [
             { id: 1, nombre: "Pizza", precio: 7000, categoria: "Pizzas", img: "https://placehold.co/40x40/f87171/ffffff?text=PZ" },
@@ -37,7 +37,7 @@
         // Contexto del Pedido
         const PedidoContexto = React.createContext();
 
-        // Reductor para manejar la lógica compleja del pedido (añadir, eliminar, etc.)
+        // Línea 37: Reductor para manejar la lógica compleja del pedido (añadir, eliminar, etc.)
         const pedidoReducer = (state, action) => {
             switch (action.type) {
                 case 'AGREGAR_ITEM': {
@@ -66,7 +66,7 @@
             }
         };
 
-        // Componente Proveedor del Contexto (Anteriormente PedidoProvider)
+        // Componente Proveedor del Contexto
         const ProveedorPedido = ({ children }) => {
             // Estado para manejar mensajes de notificación
             const [mensaje, setMensaje] = React.useState(null); 
@@ -132,7 +132,6 @@
             const impuestos = subtotal * 0.10; // 10% de impuesto simulado
             const total = subtotal + impuestos;
 
-            // Función de formato de moneda para Colombia
             const formatoCOP = (monto) => {
                 return monto.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
             }
@@ -211,6 +210,28 @@
             </div>
         );
 
+        // Línea 335: Componente para mostrar la Información del Proyecto
+        const InformacionProyecto = () => (
+            <>
+                <h1 className="text-3xl font-bold text-gray-800 mb-6">INFORMACIÓN DEL PROYECTO</h1>
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h2 className="text-xl font-semibold mb-3 text-blue-700">Sistema Integrado de Gestión de Pedidos y Control de Inventario</h2>
+                    <p className="mb-4 text-gray-700">
+                        Este sistema es una herramienta de gestión integrada, diseñada para automatizar y optimizar los procesos de toma de pedidos y control de inventario en el sector restaurantero, tal como se plantea en la documentación del proyecto.
+                    </p>
+                    <p className="mb-4 text-gray-700 font-medium">
+                        **Objetivo Principal:** Reducir la toma manual de pedidos, minimizar errores de inventario y mejorar la velocidad de atención al cliente, incrementando la rentabilidad y satisfacción.
+                    </p>
+                    <h3 className="text-lg font-semibold mt-4 text-gray-800">Tecnologías Clave</h3>
+                    <ul className="list-disc list-inside text-gray-600 ml-4">
+                        <li>**React.js:** Usado para la interfaz de usuario dinámica y modular.</li>
+                        <li>**Context API:** Para la gestión de estado del pedido global (carrito).</li>
+                        <li>**Tailwind CSS:** Para estilos rápidos y responsivos.</li>
+                    </ul>
+                </div>
+            </>
+        );
+
         // Datos simulados para la vista de mesas
         const DATOS_MESAS = [
             { id: 1, estado: 'Ocupada', personas: 4, color: 'bg-red-400 text-white' },
@@ -231,7 +252,7 @@
         // 3. COMPONENTE PRINCIPAL (Main Layout)
 
         const App = () => {
-            // useState: Simula la navegación entre vistas
+            // Línea 394: useState: Simula la navegación entre vistas
             const [vistaActual, setVistaActual] = React.useState('pedido');
             const { mensaje } = React.useContext(PedidoContexto);
 
@@ -305,6 +326,8 @@
                                 </div>
                             </>
                         );
+                    case 'info': // Línea 486: Nuevo caso para la vista de Información
+                        return <InformacionProyecto />;
                     default:
                         return null;
                 }
@@ -317,7 +340,7 @@
                         <div className="text-xl font-bold mb-8 text-yellow-400 hidden sm:block">RESTAURANTE POS</div>
                         <ul className="space-y-4 flex flex-col items-center sm:items-stretch">
                             {/* Simulación de Rutas y Navegación con useState */}
-                            {['pedido', 'mesas', 'historial'].map(item => (
+                            {['pedido', 'mesas', 'historial', 'info'].map(item => (
                                 <li key={item}>
                                     <button 
                                         onClick={() => setVistaActual(item)}
