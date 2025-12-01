@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión de Pedidos - MVP</title>
-    <!-- Incluye Tailwind CSS para un diseño rápido -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configuración para usar la fuente Inter -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -22,21 +20,20 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-        // ----------------------------------------------------
+
         // SIMULACIÓN DE BACKEND: Menú de Platos (constante JSON)
-        // ----------------------------------------------------
+        
         const MENU_PLATOS = [
-            { id: 1, nombre: "Pizza Clásica", precio: 15.00, categoria: "Pizzas", img: "https://placehold.co/40x40/f87171/ffffff?text=PZ" },
-            { id: 2, nombre: "Hamburguesa Doble", precio: 12.50, categoria: "Hamburguesas", img: "https://placehold.co/40x40/fbbf24/ffffff?text=HB" },
-            { id: 3, nombre: "Ensalada César", precio: 9.00, categoria: "Ensaladas", img: "https://placehold.co/40x40/4ade80/ffffff?text=EN" },
-            { id: 4, nombre: "Refresco Cola", precio: 3.00, categoria: "Bebidas", img: "https://placehold.co/40x40/3b82f6/ffffff?text=RF" },
-            { id: 5, nombre: "Sopa del Día", precio: 7.50, categoria: "Entrantes", img: "https://placehold.co/40x40/6366f1/ffffff?text=SO" },
-            { id: 6, nombre: "Tarta de Queso", precio: 6.00, categoria: "Postres", img: "https://placehold.co/40x40/f472b6/ffffff?text=TQ" },
+            { id: 1, nombre: "Pizza", precio: 7000, categoria: "Pizzas", img: "https://placehold.co/40x40/f87171/ffffff?text=PZ" },
+            { id: 2, nombre: "Hamburguesa Doble", precio: 20000, categoria: "Hamburguesas", img: "https://placehold.co/40x40/fbbf24/ffffff?text=HB" },
+            { id: 3, nombre: "Ensalada", precio: 15000, categoria: "Ensaladas", img: "https://placehold.co/40x40/4ade80/ffffff?text=EN" },
+            { id: 4, nombre: "Coca Cola", precio: 5000, categoria: "Bebidas", img: "https://placehold.co/40x40/3b82f6/ffffff?text=RF" },
+            { id: 5, nombre: "Sopa del Día", precio: 10000, categoria: "Entrantes", img: "https://placehold.co/40x40/6366f1/ffffff?text=SO" },
+            { id: 6, nombre: "Postre de chocolate", precio: 3500, categoria: "Postres", img: "https://placehold.co/40x40/f472b6/ffffff?text=TQ" },
         ];
 
-        // ----------------------------------------------------
         // 1. CONTEXT API: Para gestión global del pedido
-        // ----------------------------------------------------
+        
         const PedidoContext = React.createContext();
 
         // useReducer: Para manejar la lógica compleja del pedido (añadir, eliminar, etc.)
@@ -70,9 +67,7 @@
 
         // Componente Proveedor del Contexto
         const PedidoProvider = ({ children }) => {
-            // useState: Estado simple para el mensaje de éxito
             const [mensaje, setMensaje] = React.useState(null); 
-            // useReducer: Estado complejo para la lista de ítems del pedido
             const [pedido, dispatch] = React.useReducer(pedidoReducer, { items: [], id: 101, mensaje: '' });
 
             // Función para agregar ítems al pedido
@@ -84,17 +79,17 @@
             const enviarACocina = () => {
                 dispatch({ type: 'FINALIZAR_PEDIDO' });
                 setMensaje(`¡Pedido #${pedido.id} enviado a cocina! Nuevo pedido listo.`);
-                setTimeout(() => setMensaje(null), 3000); // Borra el mensaje después de 3 segundos
+                setTimeout(() => setMensaje(null), 3000);
             };
 
             // Función de Cancelación
             const cancelarPedido = () => {
                 dispatch({ type: 'CANCELAR_PEDIDO' });
                 setMensaje(`Pedido #${pedido.id} cancelado.`);
-                setTimeout(() => setMensaje(null), 3000); // Borra el mensaje después de 3 segundos
+                setTimeout(() => setMensaje(null), 3000);
             }
 
-            // Valor que se provee a los consumidores
+            // Valor
             const contextValue = { pedido, agregarItem, enviarACocina, cancelarPedido, mensaje };
 
             return (
@@ -104,13 +99,11 @@
             );
         };
 
-        // ----------------------------------------------------
         // 2. COMPONENTES: Modularizando la Interfaz
-        // ----------------------------------------------------
 
         // Componente de la Tarjeta de Producto
         const ProductoCard = ({ producto }) => {
-            // useContext: Consume el contexto para acceder a la función agregarItem
+            // useContext: Contexto para acceder a la función agregarItem
             const { agregarItem } = React.useContext(PedidoContext);
             return (
                 <div 
@@ -126,10 +119,10 @@
 
         // Componente del Resumen del Pedido (Carrito)
         const ResumenPedido = () => {
-            // useContext: Consume el contexto para acceder al estado del pedido y acciones
+            // useContext: Contexto para acceder al estado del pedido y acciones
             const { pedido, enviarACocina, cancelarPedido } = React.useContext(PedidoContext);
 
-            // Cálculo de totales (Lógica de negocio simulada)
+            // Cálculo de totales
             const subtotal = pedido.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
             const impuestos = subtotal * 0.10; // 10% de impuesto simulado
             const total = subtotal + impuestos;
@@ -177,7 +170,7 @@
                                 : 'bg-gray-500 cursor-not-allowed'
                             }`}
                         >
-                            ENVIAR A COCINA (Backend Simulado)
+                            ENVIAR A COCINA
                         </button>
                         {/* Botón de Cancelar Pedido (Resetea el carrito) */}
                         <button 
@@ -218,18 +211,17 @@
         ];
 
 
-        // ----------------------------------------------------
         // 3. COMPONENTE PRINCIPAL (Main Layout)
-        // ----------------------------------------------------
+
         const App = () => {
-            // useState: Simula la navegación entre vistas (para demostrar Rutas y Navegación)
+            // useState: Simula la navegación entre vistas
             const [vistaActual, setVistaActual] = React.useState('pedido');
             const { mensaje } = React.useContext(PedidoContext);
 
-            // useEffect: Simula la obtención inicial de datos (aunque la fuente es local)
+            // useEffect: Simula la obtención inicial de datos
             React.useEffect(() => {
                 console.log("Aplicación Iniciada. useEffect ejecutado para cargar datos iniciales del menú.");
-                // Aquí iría la llamada fetch/Axios a la API real
+                // Aquí iría la llamada a la API real
             }, []);
 
             const renderContent = () => {
@@ -279,9 +271,9 @@
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
                                             {[
-                                                { id: 100, cliente: 'Mesa 5', fecha: '2025-11-20', total: 45.50, estado: 'Pagado' },
-                                                { id: 99, cliente: 'Para llevar (J. Pérez)', fecha: '2025-11-19', total: 22.00, estado: 'Pagado' },
-                                                { id: 98, cliente: 'Mesa 1', fecha: '2025-11-19', total: 68.90, estado: 'Cancelado' },
+                                                { id: 100, cliente: 'Mesa 5', fecha: '2025-11-20', total: 45000, estado: 'Pagado' },
+                                                { id: 99, cliente: 'Para llevar (J. Pérez)', fecha: '2025-11-19', total: 22000, estado: 'Pagado' },
+                                                { id: 98, cliente: 'Mesa 1', fecha: '2025-11-19', total: 60000, estado: 'Cancelado' },
                                             ].map(ped => (
                                                 <tr key={ped.id} className="hover:bg-gray-50">
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{ped.id}</td>
@@ -343,7 +335,7 @@
                         </aside>
                     </main>
 
-                    {/* Mensaje de Éxito (Notificación) */}
+                    {/* Mensaje de Éxito */}
                     {mensaje && (
                         <div className="absolute top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-xl font-bold transition-opacity duration-300">
                             {mensaje}
